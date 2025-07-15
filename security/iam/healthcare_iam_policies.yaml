@@ -1,0 +1,272 @@
+# Healthcare Data Lakehouse - IAM Policies
+# HIPAA-compliant access control policies
+
+---
+# Data Engineer Role - Full access to data pipeline
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicy
+metadata:
+  name: healthcare-data-engineer-policy
+spec:
+  version: 3
+  bindings:
+  - role: roles/dataflow.admin
+    members:
+    - serviceAccount:healthcare-dataflow-sa@${PROJECT_ID}.iam.gserviceaccount.com
+  - role: roles/bigquery.admin
+    members:
+    - serviceAccount:healthcare-dataflow-sa@${PROJECT_ID}.iam.gserviceaccount.com
+  - role: roles/storage.admin
+    members:
+    - serviceAccount:healthcare-dataflow-sa@${PROJECT_ID}.iam.gserviceaccount.com
+  - role: roles/pubsub.admin
+    members:
+    - serviceAccount:healthcare-dataflow-sa@${PROJECT_ID}.iam.gserviceaccount.com
+  - role: roles/composer.admin
+    members:
+    - serviceAccount:healthcare-composer-sa@${PROJECT_ID}.iam.gserviceaccount.com
+
+---
+# Data Analyst Role - Read-only access to curated data
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicy
+metadata:
+  name: healthcare-data-analyst-policy
+spec:
+  version: 3
+  bindings:
+  - role: roles/bigquery.dataViewer
+    members:
+    - group:data-analysts@${ORGANIZATION_DOMAIN}
+    condition:
+      title: healthcare_curated_data_access
+      description: Access to curated healthcare data only
+      expression: resource.type == "bigquery_dataset" && 
+                  resource.name.contains("healthcare_curated")
+  - role: roles/bigquery.jobUser
+    members:
+    - group:data-analysts@${ORGANIZATION_DOMAIN}
+    condition:
+      title: healthcare_curated_queries
+      description: Query access to curated healthcare data only
+      expression: resource.type == "bigquery_dataset" && 
+                  resource.name.contains("healthcare_curated")
+
+---
+# Clinical Staff Role - Access to patient data with restrictions
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicy
+metadata:
+  name: healthcare-clinical-staff-policy
+spec:
+  version: 3
+  bindings:
+  - role: roles/bigquery.dataViewer
+    members:
+    - group:clinical-staff@${ORGANIZATION_DOMAIN}
+    condition:
+      title: patient_data_access_with_audit
+      description: Access to patient data with audit logging
+      expression: resource.type == "bigquery_dataset" && 
+                  (resource.name.contains("healthcare_curated") || 
+                   resource.name.contains("healthcare_processed"))
+  - role: roles/bigquery.jobUser
+    members:
+    - group:clinical-staff@${ORGANIZATION_DOMAIN}
+    condition:
+      title: clinical_queries_only
+      description: Query access for clinical purposes only
+      expression: resource.type == "bigquery_dataset" && 
+                  (resource.name.contains("healthcare_curated") || 
+                   resource.name.contains("healthcare_processed"))
+
+---
+# Compliance Officer Role - Audit and monitoring access
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicy
+metadata:
+  name: healthcare-compliance-officer-policy
+spec:
+  version: 3
+  bindings:
+  - role: roles/logging.viewer
+    members:
+    - user:compliance-officer@${ORGANIZATION_DOMAIN}
+  - role: roles/monitoring.viewer
+    members:
+    - user:compliance-officer@${ORGANIZATION_DOMAIN}
+  - role: roles/iam.securityReviewer
+    members:
+    - user:compliance-officer@${ORGANIZATION_DOMAIN}
+  - role: roles/bigquery.dataViewer
+    members:
+    - user:compliance-officer@${ORGANIZATION_DOMAIN}
+    condition:
+      title: compliance_audit_access
+      description: Access for compliance auditing purposes
+      expression: resource.type == "bigquery_dataset"
+
+---
+# System Administrator Role - Infrastructure management
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicy
+metadata:
+  name: healthcare-system-admin-policy
+spec:
+  version: 3
+  bindings:
+  - role: roles/compute.admin
+    members:
+    - user:system-admin@${ORGANIZATION_DOMAIN}
+  - role: roles/storage.admin
+    members:
+    - user:system-admin@${ORGANIZATION_DOMAIN}
+  - role: roles/iam.serviceAccountAdmin
+    members:
+    - user:system-admin@${ORGANIZATION_DOMAIN}
+  - role: roles/cloudkms.admin
+    members:
+    - user:system-admin@${ORGANIZATION_DOMAIN}
+
+---
+# Custom Role - Healthcare Data Processor
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMCustomRole
+metadata:
+  name: healthcareDataProcessor
+spec:
+  title: Healthcare Data Processor
+  description: Custom role for processing healthcare data with HIPAA compliance
+  stage: GA
+  permissions:
+  - bigquery.datasets.get
+  - bigquery.tables.get
+  - bigquery.tables.updateData
+  - bigquery.jobs.create
+  - storage.objects.get
+  - storage.objects.create
+  - storage.objects.update
+  - pubsub.messages.publish
+  - pubsub.subscriptions.consume
+  - dataflow.jobs.create
+  - dataflow.jobs.get
+  - dataflow.jobs.update
+
+---
+# Custom Role - Healthcare Data Viewer
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMCustomRole
+metadata:
+  name: healthcareDataViewer
+spec:
+  title: Healthcare Data Viewer
+  description: Custom role for viewing healthcare data with HIPAA compliance
+  stage: GA
+  permissions:
+  - bigquery.datasets.get
+  - bigquery.tables.get
+  - bigquery.tables.getData
+  - bigquery.jobs.create
+  - storage.objects.get
+
+---
+# Service Account - Data Processing
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMServiceAccount
+metadata:
+  name: healthcare-data-processing-sa
+spec:
+  accountId: healthcare-data-processing-sa
+  displayName: Healthcare Data Processing Service Account
+  description: Service account for healthcare data processing with HIPAA compliance
+
+---
+# Service Account - Data Ingestion
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMServiceAccount
+metadata:
+  name: healthcare-data-ingestion-sa
+spec:
+  accountId: healthcare-data-ingestion-sa
+  displayName: Healthcare Data Ingestion Service Account
+  description: Service account for healthcare data ingestion with HIPAA compliance
+
+---
+# Service Account - Monitoring
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMServiceAccount
+metadata:
+  name: healthcare-monitoring-sa
+spec:
+  accountId: healthcare-monitoring-sa
+  displayName: Healthcare Monitoring Service Account
+  description: Service account for healthcare monitoring and alerting
+
+---
+# Workload Identity Pool - External Identity Federation
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMWorkloadIdentityPool
+metadata:
+  name: healthcare-identity-pool
+spec:
+  displayName: Healthcare Identity Pool
+  description: Workload identity pool for healthcare applications
+  disabled: false
+
+---
+# Workload Identity Provider - SAML
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMWorkloadIdentityPoolProvider
+metadata:
+  name: healthcare-saml-provider
+spec:
+  workloadIdentityPoolRef:
+    name: healthcare-identity-pool
+  displayName: Healthcare SAML Provider
+  description: SAML provider for healthcare identity federation
+  attributeMapping:
+    google.subject: assertion.subject
+    attribute.roles: assertion.attributes['roles']
+    attribute.groups: assertion.attributes['groups']
+  oidc:
+    issuerUri: https://healthcare-identity-provider.com
+    allowedAudiences:
+    - healthcare-audience
+
+---
+# Organization Policy - Data Access Transparency
+apiVersion: resourcemanager.cnrm.cloud.google.com/v1beta1
+kind: ResourceManagerPolicy
+metadata:
+  name: healthcare-data-transparency-policy
+spec:
+  spec:
+    rules:
+    - enforce: true
+      condition:
+        title: healthcare_data_access
+        description: Require justification for healthcare data access
+        expression: resource.type == "bigquery_dataset" && 
+                    resource.name.contains("healthcare")
+    - enforce: true
+      condition:
+        title: audit_logging_required
+        description: Require audit logging for all healthcare data access
+        expression: resource.type == "bigquery_dataset" && 
+                    resource.name.contains("healthcare")
+
+---
+# Organization Policy - Data Retention
+apiVersion: resourcemanager.cnrm.cloud.google.com/v1beta1
+kind: ResourceManagerPolicy
+metadata:
+  name: healthcare-data-retention-policy
+spec:
+  spec:
+    rules:
+    - enforce: true
+      condition:
+        title: healthcare_data_retention
+        description: Enforce 7-year retention for healthcare data (HIPAA requirement)
+        expression: resource.type == "bigquery_dataset" && 
+                    resource.name.contains("healthcare_curated") 

@@ -1,0 +1,142 @@
+name: 'healthcare_data_lakehouse'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'healthcare_data_lakehouse'
+
+# These configurations specify where dbt should look for different types of files.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+models:
+  healthcare_data_lakehouse:
+    # Config indicated by + and applies to all files under models/example/
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+    curated:
+      +materialized: table
+
+# Configuring tests
+tests:
+  healthcare_data_lakehouse:
+    +store_failures: true
+    +severity: warn
+
+# Configuring seeds
+seeds:
+  healthcare_data_lakehouse:
+    +column_types:
+      id: varchar(256)
+      created_at: timestamp
+
+# Configuring snapshots
+snapshots:
+  healthcare_data_lakehouse:
+    +target_schema: snapshots
+    +strategy: timestamp
+    +updated_at: updated_at
+
+# Configuring docs
+docs-paths: ["docs"]
+
+# Configuring packages
+packages-install-path: "dbt_packages"
+
+# Configuring vars
+vars:
+  # Variables for the project
+  project_start_date: '2024-01-01'
+  healthcare_organization: 'Demo Healthcare System'
+  
+  # Data quality thresholds
+  min_heart_rate: 40
+  max_heart_rate: 200
+  min_temperature: 35.0
+  max_temperature: 42.0
+  min_claim_amount: 0.01
+  max_claim_amount: 100000.00
+
+# Configuring models with specific configurations
+models:
+  healthcare_data_lakehouse:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+    curated:
+      +schema: curated
+      +materialized: table
+    snapshots:
+      +schema: snapshots
+      +materialized: table
+
+# Configuring tests with specific configurations
+tests:
+  healthcare_data_lakehouse:
+    +store_failures: true
+    +severity: warn
+    +warn_if: ">10"
+    +error_if: ">100"
+
+# Configuring seeds with specific configurations
+seeds:
+  healthcare_data_lakehouse:
+    +schema: seeds
+    +column_types:
+      id: varchar(256)
+      created_at: timestamp
+      updated_at: timestamp
+
+# Configuring snapshots with specific configurations
+snapshots:
+  healthcare_data_lakehouse:
+    +target_schema: snapshots
+    +strategy: timestamp
+    +updated_at: updated_at
+    +unique_key: id
+
+# Configuring docs with specific configurations
+docs-paths: ["docs"]
+
+# Configuring packages with specific configurations
+packages-install-path: "dbt_packages"
+
+# Configuring vars with specific configurations
+vars:
+  # Project variables
+  project_start_date: '2024-01-01'
+  healthcare_organization: 'Demo Healthcare System'
+  
+  # Data quality thresholds
+  min_heart_rate: 40
+  max_heart_rate: 200
+  min_temperature: 35.0
+  max_temperature: 42.0
+  min_claim_amount: 0.01
+  max_claim_amount: 100000.00
+  
+  # Business logic variables
+  elevated_heart_rate_threshold: 100
+  low_heart_rate_threshold: 60
+  fever_temperature_threshold: 38.0
+  high_claim_amount_threshold: 1000.00
+  
+  # Time-based variables
+  lookback_days: 30
+  alert_window_hours: 24
+  retention_days: 2555  # 7 years for HIPAA compliance 
