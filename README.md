@@ -199,4 +199,4 @@ This project is for educational and portfolio purposes.
 
 ## 🤝 Contributing
 
-This is a demonstration project. For production use, ensure proper security reviews and compliance validation. 
+This is a demonstration project. For production use, ensure proper security reviews and compliance validation.
